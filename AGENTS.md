@@ -43,7 +43,7 @@ Inside this `./build` directory will be a directory structure like this
 ### Start the container
 
 ```bash
-docker compose up -d
+docker compose pull && docker compose up -d
 ```
 
 The Unmanic UI will be available on port 7888 (http://localhost:7888).
@@ -76,6 +76,51 @@ Arguments:
 Tip: `test_plugin` is just an example; pick a real ID/name for your plugin.
 You can review the current CLI options in `./projects/unmanic/unmanic/service.py`.
 
+After scaffolding, update `./build/plugins/<plugin_id>/info.json` so the plugin is correctly identified
+in the UI and metadata is accurate. Agents (Gemini, Codex, Claude, etc) should not leave the placeholder
+`Plugin Name` in place. Fields to review and update:
+
+- `id` (must match `--plugin-id`)
+- `name` (user-facing label, not the placeholder "Plugin Name")
+- `description` (short summary of what the plugin does)
+- `author` (name/handle -- the agent can infer this from git settings; try `git config user.name` and
+  `git config user.email` in the repo first, then fall back to `git config --global user.name` /
+  `git config --global user.email` if needed)
+- `version` (start at 0.0.1 or match your release if editing or creating an update to an existing plugin)
+- `tags` (comma-separated keywords. See existing plugins in `./projects/unmanic-plugins/source/` for examples)
+- `icon` (URL or a local file path, if used)
+- `compatibility` (Unmanic major versions, usually `[2]`)
+- `priorities` (optional; map of runner names to execution order)
+
+Example `info.json`:
+
+```json
+{
+  "author": "Your Name",
+  "compatibility": [2],
+  "description": "Transcode the video streams of a video file",
+  "icon": "https://raw.githubusercontent.com/Unmanic/plugin.video_transcoder/master/icon.png",
+  "id": "video_transcoder",
+  "name": "Transcode Video Files",
+  "priorities": {
+    "on_library_management_file_test": 10,
+    "on_worker_process": 1
+  },
+  "tags": "video,ffmpeg",
+  "version": "0.1.13"
+}
+```
+
+### Update an existing plugin
+
+When modifying an existing plugin, follow a short release checklist so the UI and metadata stay accurate:
+
+1. Implement the feature or fix in `./build/plugins/<plugin_id>`.
+1. Update the plugin changelog. Use `./projects/unmanic-plugins/source/video_transcoder/changelog.md`
+   as a formatting reference.
+1. Bump the `version` field in `./build/plugins/<plugin_id>/info.json` to match the changelog entry.
+1. Reload plugins with `--reload-plugins` so the UI picks up the changes, then test with `--test-plugin`.
+
 ### Reload plugins
 
 ```bash
@@ -83,8 +128,7 @@ docker compose exec unmanic-dev \
   unmanic --manage-plugins --reload-plugins
 ```
 
-After creating or editing a plugin, it will not appear in the Unmanic UI (http://localhost:7888)
-until you reload plugins with the command above.
+After creating or editing a plugin, it will not appear in the Unmanic UI (http://localhost:7888) until you reload plugins with the command above.
 
 ### Test a plugin
 
