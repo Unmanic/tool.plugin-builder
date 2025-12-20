@@ -76,12 +76,11 @@ same port (and vice versa). Stop the existing stack before switching runtimes. I
 
 ### Create a plugin
 
-First start the container, then run a command like the example below. Always execute Unmanic commands via
-`docker compose exec` (or `podman compose exec` if that is what you use). Running inside the container ensures
-the Ubuntu-based image has access to the required dependencies for Unmanic and plugins.
+First start the container, then run a command like the example below. Always execute Unmanic commands via `docker compose exec --user=$(id -u)` (or `podman compose exec --user=$(id -u)` if that is what you use).
+Running inside the container ensures the Ubuntu-based image has access to the required dependencies for Unmanic and plugins.
 
 ```bash
-docker compose exec unmanic-dev \
+docker compose exec --user=$(id -u) unmanic-dev \
   unmanic --manage-plugins \
   --create-plugin \
   --plugin-id=test_plugin \
@@ -176,7 +175,7 @@ When modifying an existing plugin, follow a short release checklist so the UI an
 ### Reload plugins
 
 ```bash
-docker compose exec unmanic-dev \
+docker compose exec --user=$(id -u) unmanic-dev \
   unmanic --manage-plugins --reload-plugins
 ```
 
@@ -185,7 +184,7 @@ After creating or editing a plugin, it will not appear in the Unmanic UI (http:/
 ### Test a plugin
 
 ```bash
-docker compose exec unmanic-dev \
+docker compose exec --user=$(id -u) unmanic-dev \
   unmanic --manage-plugins --test-plugin=test_plugin
 ```
 
@@ -193,7 +192,7 @@ You can override the test input/output filenames with `--test-file-in` and `--te
 just the filenames located under `./build/dev/library` (not full paths). Use them when you want a specific media file for validation.
 
 ```bash
-docker compose exec unmanic-dev \
+docker compose exec --user=$(id -u) unmanic-dev \
   unmanic --manage-plugins \
   --test-plugin=test_plugin \
   --test-file-in="source.mkv" \
@@ -208,7 +207,7 @@ Unmanic can install sample media for testing via `--install-test-data` (see `./p
 This creates the directories `./build/dev/cache` and `./build/dev/library` on the host (container paths `/config/.unmanic/dev/cache` and `/config/.unmanic/dev/library`) and downloads example files into them.
 
 ```bash
-docker compose exec unmanic-dev \
+docker compose exec --user=$(id -u) unmanic-dev \
   unmanic --manage-plugins --install-test-data
 ```
 
@@ -227,7 +226,7 @@ After CLI tests, you can query the running Unmanic API to verify plugin install/
 library configuration. Always run `curl` or `wget` inside the container to hit the service directly:
 
 ```bash
-docker compose exec unmanic-dev \
+docker compose exec --user=$(id -u) unmanic-dev \
   curl -sS http://localhost:7888/unmanic/swagger/swagger.json > /tmp/unmanic-swagger.json
 ```
 
@@ -239,37 +238,37 @@ Common API calls (examples):
 
 ```bash
 # List installed plugins (table-style request body).
-docker compose exec unmanic-dev \
+docker compose exec --user=$(id -u) unmanic-dev \
   curl -sS -X POST http://localhost:7888/unmanic/api/v2/plugins/installed \
   -H 'Content-Type: application/json' \
   -d '{"start":0,"length":200,"search_value":"","status":"all","order_by":"name","order_direction":"asc"}'
 
 # Read plugin info/settings (prefer local plugin by ID).
-docker compose exec unmanic-dev \
+docker compose exec --user=$(id -u) unmanic-dev \
   curl -sS -X POST http://localhost:7888/unmanic/api/v2/plugins/info \
   -H 'Content-Type: application/json' \
   -d '{"plugin_id":"test_plugin","prefer_local":true}'
 
 # Worker status.
-docker compose exec unmanic-dev \
+docker compose exec --user=$(id -u) unmanic-dev \
   curl -sS http://localhost:7888/unmanic/api/v2/workers/status
 
 # List libraries, read one, then write it back (edit JSON as needed).
-docker compose exec unmanic-dev \
+docker compose exec --user=$(id -u) unmanic-dev \
   curl -sS http://localhost:7888/unmanic/api/v2/settings/libraries
 
-docker compose exec unmanic-dev \
+docker compose exec --user=$(id -u) unmanic-dev \
   curl -sS -X POST http://localhost:7888/unmanic/api/v2/settings/library/read \
   -H 'Content-Type: application/json' \
   -d '{"id":1}'
 
-docker compose exec unmanic-dev \
+docker compose exec --user=$(id -u) unmanic-dev \
   curl -sS -X POST http://localhost:7888/unmanic/api/v2/settings/library/write \
   -H 'Content-Type: application/json' \
   -d '{"library_config":{"id":1,"name":"Default","path":"/config/.unmanic/dev/library","enable_scanner":true,"enable_inotify":false,"priority_score":0,"tags":[]},"plugins":{"enabled_plugins":[{"library_id":1,"plugin_id":"test_plugin"}]}}'
 
 # Enable debug logging. This will enable more verbose logging in `./build/logs/unmanic.log`
-docker compose exec unmanic-dev \
+docker compose exec --user=$(id -u) unmanic-dev \
   curl -sS -X POST http://localhost:7888/unmanic/api/v2/settings/write \
   -H 'Content-Type: application/json' \
   -d '{"settings":{"debugging":true}}'
@@ -290,7 +289,7 @@ To validate worker plugins against real files:
 Example scan trigger:
 
 ```bash
-docker compose exec unmanic-dev \
+docker compose exec --user=$(id -u) unmanic-dev \
   curl -sS -X POST http://localhost:7888/unmanic/api/v2/pending/library/update \
   -H 'Content-Type: application/json' \
   -d '{"id_list":[1],"library_name":"Default"}'
