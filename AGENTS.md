@@ -111,6 +111,9 @@ Example `info.json`:
 }
 ```
 
+Icon tip: if you need an icon, agents can search for a suitable `icon.png` (for example `"githubusercontent <service name> icon png"`), download it with `curl` into the plugin root, and set `icon` in `info.json` to the raw GitHub URL, e.g.
+`https://raw.githubusercontent.com/<GITHUB_ORG>/<REPO>/master/icon.png`.
+
 ### Update an existing plugin
 
 When modifying an existing plugin, follow a short release checklist so the UI and metadata stay accurate:
