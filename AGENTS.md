@@ -150,6 +150,81 @@ docker compose exec unmanic-dev \
 
 Files must exists in that `./build/dev/library` which is mounted into the unmanic-dev container as `/config/.unmanic/dev/library`.
 
+### Validate with the Unmanic API (curl/wget)
+
+After CLI tests, you can query the running Unmanic API to verify plugin install/status, settings, and
+library configuration. Always run `curl` or `wget` inside the container to hit the service directly:
+
+```bash
+docker compose exec unmanic-dev \
+  curl -sS http://localhost:7888/unmanic/swagger/swagger.json > /tmp/unmanic-swagger.json
+```
+
+Use the Swagger JSON to discover all endpoints. Note: the `servers` list inside the Swagger file may
+still reference port 8888, but this dev container runs on 7888. Always send requests to
+`http://localhost:7888/unmanic/api/v2/`.
+
+Common API calls (examples):
+
+```bash
+# List installed plugins (table-style request body).
+docker compose exec unmanic-dev \
+  curl -sS -X POST http://localhost:7888/unmanic/api/v2/plugins/installed \
+  -H 'Content-Type: application/json' \
+  -d '{"start":0,"length":200,"search_value":"","status":"all","order_by":"name","order_direction":"asc"}'
+
+# Read plugin info/settings (prefer local plugin by ID).
+docker compose exec unmanic-dev \
+  curl -sS -X POST http://localhost:7888/unmanic/api/v2/plugins/info \
+  -H 'Content-Type: application/json' \
+  -d '{"plugin_id":"test_plugin","prefer_local":true}'
+
+# Worker status.
+docker compose exec unmanic-dev \
+  curl -sS http://localhost:7888/unmanic/api/v2/workers/status
+
+# List libraries, read one, then write it back (edit JSON as needed).
+docker compose exec unmanic-dev \
+  curl -sS http://localhost:7888/unmanic/api/v2/settings/libraries
+
+docker compose exec unmanic-dev \
+  curl -sS -X POST http://localhost:7888/unmanic/api/v2/settings/library/read \
+  -H 'Content-Type: application/json' \
+  -d '{"id":1}'
+
+docker compose exec unmanic-dev \
+  curl -sS -X POST http://localhost:7888/unmanic/api/v2/settings/library/write \
+  -H 'Content-Type: application/json' \
+  -d '{"library_config":{"id":1,"name":"Default","path":"/config/.unmanic/dev/library","enable_scanner":true,"enable_inotify":false,"priority_score":0,"tags":[]},"plugins":{"enabled_plugins":[{"library_id":1,"plugin_id":"test_plugin"}]}}'
+
+# Enable debug logging. This will enable more verbose logging in `./build/logs/unmanic.log`
+docker compose exec unmanic-dev \
+  curl -sS -X POST http://localhost:7888/unmanic/api/v2/settings/write \
+  -H 'Content-Type: application/json' \
+  -d '{"settings":{"debugging":true}}'
+```
+
+### API-driven testing workflow (optional)
+
+To validate worker plugins against real files:
+
+1. Place media files under `./build/dev/library` on the host (container path:
+   `/config/.unmanic/dev/library`).
+1. Use `/settings/libraries` and `/settings/library/read` to locate your library ID.
+1. Use `/settings/library/write` to enable the new plugin for that library.
+1. Trigger a scan with `/pending/library/update` or `/pending/rescan` and monitor progress via
+   `/workers/status`.
+1. Tail `./build/logs/unmanic.log` on the host to observe worker execution.
+
+Example scan trigger:
+
+```bash
+docker compose exec unmanic-dev \
+  curl -sS -X POST http://localhost:7888/unmanic/api/v2/pending/library/update \
+  -H 'Content-Type: application/json' \
+  -d '{"id_list":[1],"library_name":"Default"}'
+```
+
 ## Agent expectations
 
 When asked to build a plugin, use the CLI to scaffold it, then fill in metadata and logic.
