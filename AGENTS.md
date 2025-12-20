@@ -40,13 +40,39 @@ Inside this `./build` directory will be a directory structure like this
 └── plugins
 ```
 
+### Ensure PUID/PGID are set for docker compose
+
+Before running any `docker compose` commands, ensure a `.env` file exists with your UID/GID/TZ.
+With this file in place, you do not need to prefix compose commands with `PUID=... PGID=...`.
+
+```bash
+cat << EOF > .env
+PUID=$(id -u)
+PGID=$(id -g)
+TZ=$(cat /etc/timezone 2>/dev/null || timedatectl show -p Timezone --value 2>/dev/null || echo UTC)
+EOF
+```
+
+If this file needed to be created, you will need to restart the docker compose stack.
+
 ### Start the container
+
+If Docker is unavailable, use Podman as a fallback. Prefer Docker when possible.
 
 ```bash
 docker compose pull && docker compose up -d
 ```
 
 The Unmanic UI will be available on port 7888 (http://localhost:7888).
+
+Example Podman fallback:
+
+```bash
+podman compose pull && podman compose up -d
+```
+
+Warning: the stack exposes port 7888. If Docker already started the stack, Podman will fail to bind the
+same port (and vice versa). Stop the existing stack before switching runtimes. If `podman` is used to start the stack, then all subsequent commands must also be run with `podman compose` instead of `docker compose`.
 
 ### Create a plugin
 

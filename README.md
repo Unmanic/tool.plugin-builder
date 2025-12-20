@@ -14,6 +14,16 @@ This repo is a minimal workspace for generating Unmanic plugins with an AI agent
 ./clone-projects.sh
 ```
 
+1. Ensure a `.env` file exists with your UID/GID/TZ (used by docker-compose):
+
+```bash
+cat << EOF > .env
+PUID=$(id -u)
+PGID=$(id -g)
+TZ=$(cat /etc/timezone 2>/dev/null || timedatectl show -p Timezone --value 2>/dev/null || echo UTC)
+EOF
+```
+
 1. Start the Unmanic container:
 
 ```bash
@@ -39,7 +49,8 @@ docker compose exec unmanic-dev \
 1. Edit the plugin in `./build/plugins/`, then test:
 
 ```bash
-docker compose exec unmanic-dev unmanic --manage-plugins --test-plugin=test_plugin
+docker compose exec unmanic-dev \
+  unmanic --manage-plugins --test-plugin=test_plugin
 ```
 
 ## Quick start with AI agents
