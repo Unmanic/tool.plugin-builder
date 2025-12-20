@@ -40,9 +40,46 @@ docker compose exec unmanic-dev \
 docker compose exec unmanic-dev unmanic --manage-plugins --test-plugin=test_plugin
 ```
 
+## Quick start with AI agents
+
+These guides assume you run the agent from the repo root so it can read `AGENTS.md`,
+`docker-compose.yml`, and the `./projects` references. Each agent should be pointed at
+`AGENTS.md` for project-specific rules and CLI examples.
+
+### Ensure project references are available before running your agent:
+
+```bash
+./clone-projects.sh
+```
+
+### Start your agent in this repo (use your normal install/entrypoint):
+
+For Codex:
+
+```bash
+codex
+```
+
+For Gemini CLI:
+
+```bash
+gemini
+```
+
+For Claude CLI:
+
+```bash
+claude
+```
+
+1. Prompt your agent to build you something. Describe what you want it to do. Give it as much detail on how you want the plugin settings to work and how you think the plugin should interact with files.
+1. When prompted by your agent, ensure you grant it permissions to access the files it needs to read or write and to execute the commands it needs to execute.
+
 ## Directory layout
 
 - `./build` -- Mounted to `/config/.unmanic` in the container; generated config/logs/plugins live here
+- `./build/dev/cache` -- Will be set as the cache location when testing plugins
+- `./build/dev/library` -- Will be set as the library location when testing plugins
 - `./projects` -- Reference repos used by the agent
 
 ## Notes

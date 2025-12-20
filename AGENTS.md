@@ -88,10 +88,37 @@ docker compose exec unmanic-dev \
   unmanic --manage-plugins --test-plugin=test_plugin
 ```
 
+You can override the test input/output filenames with `--test-file-in` and `--test-file-out`. These are
+just the filenames located under `./build/dev/library` (not full paths). Use them when you want a specific media file for validation.
+
+```bash
+docker compose exec unmanic-dev \
+  unmanic --manage-plugins \
+  --test-plugin=test_plugin \
+  --test-file-in="source.mkv" \
+  --test-file-out="expected-output.mkv"
+```
+
+Files must exists in that `./build/dev/library` which is mounted into the unmanic-dev container as `/config/.unmanic/dev/library`.
+
 ## Agent expectations
 
 When asked to build a plugin, use the CLI to scaffold it, then fill in metadata and logic.
 Reference the local `./projects` repositories for code patterns and API usage.
+
+## FFmpeg helper submodule (default)
+
+Unless explicitly told not to, wrap FFmpeg/FFprobe usage with the helper library at
+https://github.com/Josh5/unmanic.plugin.helpers.ffmpeg. Add it to each plugin that needs to use `ffmpeg` or `ffprobe` as a submodule:
+
+```bash
+git submodule add https://github.com/Josh5/unmanic.plugin.helpers.ffmpeg.git ./lib/ffmpeg
+```
+
+Note: `./projects/unmanic-plugins/source/` is a published source mirror and does not include submodules.
+For example, `./projects/unmanic-plugins/source/video_transcoder/` exists here, but the original
+repo at https://github.com/Unmanic/plugin.video_transcoder includes the FFmpeg helper submodule
+under `./lib/ffmpeg`.
 
 ## Dependencies inside the container
 
