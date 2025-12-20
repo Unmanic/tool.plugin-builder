@@ -102,6 +102,29 @@ Arguments:
 Tip: `test_plugin` is just an example; pick a real ID/name for your plugin.
 You can review the current CLI options in `./projects/unmanic/unmanic/service.py`.
 
+After scaffolding, ensure the plugin includes the standard metadata files:
+
+1. Add a license file by copying this repo's `LICENSE` into the plugin:
+
+```bash
+cp ./LICENSE ./build/plugins/<plugin_id>/LICENSE
+```
+
+1. Create `./build/plugins/<plugin_id>/changelog.md` and
+   `./build/plugins/<plugin_id>/description.md`. Use
+   `./projects/unmanic-plugins/source/limit_library_search_by_ffprobe_data/changelog.md` and
+   `./projects/unmanic-plugins/source/limit_library_search_by_ffprobe_data/description.md` as
+   formatting/content references.
+
+Example `changelog.md`:
+
+```ini
+**<span style="color:#56adda">0.0.1</span>**
+- Initial version
+```
+
+`description.md` should explain what the plugin does and how it can be configured, optionally including links to related docs or tools.
+
 After scaffolding, update `./build/plugins/<plugin_id>/info.json` so the plugin is correctly identified
 in the UI and metadata is accurate. Agents (Gemini, Codex, Claude, etc) should not leave the placeholder
 `Plugin Name` in place. Fields to review and update:
@@ -178,6 +201,25 @@ docker compose exec unmanic-dev \
 ```
 
 Files must exists in that `./build/dev/library` which is mounted into the unmanic-dev container as `/config/.unmanic/dev/library`.
+
+### Install sample test data
+
+Unmanic can install sample media for testing via `--install-test-data` (see `./projects/unmanic/unmanic/libs/unplugins/pluginscli.py`).
+This creates the directories `./build/dev/cache` and `./build/dev/library` on the host (container paths `/config/.unmanic/dev/cache` and `/config/.unmanic/dev/library`) and downloads example files into them.
+
+```bash
+docker compose exec unmanic-dev \
+  unmanic --manage-plugins --install-test-data
+```
+
+Current samples include:
+
+- `Big_Buck_Bunny_1080_10s_30MB_h264.mkv`
+- `Big_Buck_Bunny_1080_10s_30MB_h264.mp4`
+- `Big_Buck_Bunny_1080_10s_30MB_av1.mp4`
+- `sample-12s.mp3`
+
+You can also download additional test files by running `curl` inside the container and saving into `/config/.unmanic/dev/library` (host path `./build/dev/library`), then use `--test-file-in`/`--test-file-out` to target them.
 
 ### Validate with the Unmanic API (curl/wget)
 

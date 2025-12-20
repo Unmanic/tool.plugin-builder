@@ -10,7 +10,7 @@ services:
     environment:
       - PUID=${PUID:-1000}
       - PGID=${PGID:-1000}
-      - TZ=${TZ:-UTC}
+      - TZ=${TZ:-Etc/UTC}
     ports:
       - "7888:7888"
     volumes:
