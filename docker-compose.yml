@@ -1,0 +1,12 @@
+version: "3.9"
+
+services:
+  unmanic-dev:
+    container_name: unmanic-plugin-dev
+    image: ghcr.io/unmanic/unmanic:staging
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+    volumes:
+      - ./build:/config/.unmanic
