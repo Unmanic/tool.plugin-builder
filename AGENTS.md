@@ -46,6 +46,8 @@ Inside this `./build` directory will be a directory structure like this
 docker compose up -d
 ```
 
+The Unmanic UI will be available on port 7888 (http://localhost:7888).
+
 ### Create a plugin
 
 First start the container, then run a command like the example below. Always execute Unmanic commands via
@@ -80,6 +82,9 @@ You can review the current CLI options in `./projects/unmanic/unmanic/service.py
 docker compose exec unmanic-dev \
   unmanic --manage-plugins --reload-plugins
 ```
+
+After creating or editing a plugin, it will not appear in the Unmanic UI (http://localhost:7888)
+until you reload plugins with the command above.
 
 ### Test a plugin
 

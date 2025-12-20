@@ -20,6 +20,8 @@ This repo is a minimal workspace for generating Unmanic plugins with an AI agent
 docker compose up -d
 ```
 
+The Unmanic UI will be available on port 7888 (http://localhost:7888).
+
 1. Create a plugin:
 
 ```bash
