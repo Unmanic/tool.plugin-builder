@@ -130,7 +130,15 @@ Example `changelog.md`:
 - Initial version
 ```
 
-`description.md` should explain what the plugin does and how it can be configured, optionally including links to related docs or tools.
+`description.md` should explain what the plugin does and how it can be configured, optionally including links to related docs or tools. It should always start with:
+
+```markdown
+---
+
+<detailed explanation on the plugin, what it does, etc.>
+```
+
+The `description.md` file should not start with a header. just a HR (---).
 
 After scaffolding, update `./build/plugins/<plugin_id>/info.json` so the plugin is correctly identified
 in the UI and metadata is accurate. Agents (Gemini, Codex, Claude, etc) should not leave the placeholder
@@ -224,9 +232,16 @@ Current samples include:
 - `Big_Buck_Bunny_1080_10s_30MB_h264.mkv`
 - `Big_Buck_Bunny_1080_10s_30MB_h264.mp4`
 - `Big_Buck_Bunny_1080_10s_30MB_av1.mp4`
+- `Big_Buck_Bunny_360_10s_1MB_h264.mp4`
 - `sample-12s.mp3`
 
 You can also download additional test files by running `curl` inside the container and saving into `/config/.unmanic/dev/library` (host path `./build/dev/library`), then use `--test-file-in`/`--test-file-out` to target them.
+
+### Manipulate sample files for plugin testing
+
+Agents should identify the specific media characteristics needed to test a plugin (codec, duration, resolution, audio presence, etc.) and create those files from the existing samples in `./build/dev/library`. Use `ffprobe` inside the container to inspect source media and choose appropriate `ffmpeg` arguments for transcoding, trimming, or scaling.
+
+Agents are free to run commands inside the container to install any dependencies required to generate sample/test files (before running `--test-plugin`). Keep generated files in `./build/dev/library` so they are available to `--test-file-in`/`--test-file-out`.
 
 ### Validate with the Unmanic API (curl/wget)
 
