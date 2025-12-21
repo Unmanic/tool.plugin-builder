@@ -24,13 +24,21 @@ TZ=$(cat /etc/timezone 2>/dev/null || timedatectl show -p Timezone --value 2>/de
 EOF
 ```
 
-1. Start the Unmanic container:
+1. Start the Unmanic container (use `./compose.sh` so GPU passthrough is enabled when available):
 
 ```bash
-docker compose up -d
+./compose.sh up -d
 ```
 
 The Unmanic UI will be available on port 7888 (http://localhost:7888).
+
+To stop the stack:
+
+```bash
+./compose.sh down
+```
+
+`./compose.sh` auto-detects NVIDIA or Intel/AMD (DRI) devices and adds the relevant override file from `./docker/`. If Docker is unavailable, you can use `./compose.sh --podman`.
 
 1. Create a plugin:
 

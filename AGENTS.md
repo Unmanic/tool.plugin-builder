@@ -57,22 +57,30 @@ If this file needed to be created, you will need to restart the docker compose s
 
 ### Start the container
 
-If Docker is unavailable, use Podman as a fallback. Prefer Docker when possible.
+Use `./compose.sh` to start/stop the stack. It detects GPU hardware and automatically includes the appropriate override file from `./docker/`:
+
+- NVIDIA: uses `./docker/docker-compose.nvidia.yml` when `nvidia-smi` or `/dev/nvidiactl` is present.
+- Intel/AMD (DRI): uses `./docker/docker-compose.dri.yml` when `/dev/dri` exists.
 
 ```bash
-docker compose pull && docker compose up -d
+./compose.sh pull && ./compose.sh up -d
 ```
 
 The Unmanic UI will be available on port 7888 (http://localhost:7888).
 
-Example Podman fallback:
+To stop the stack:
 
 ```bash
-podman compose pull && podman compose up -d
+./compose.sh down
 ```
 
-Warning: the stack exposes port 7888. If Docker already started the stack, Podman will fail to bind the
-same port (and vice versa). Stop the existing stack before switching runtimes. If `podman` is used to start the stack, then all subsequent commands must also be run with `podman compose` instead of `docker compose`.
+Podman fallback:
+
+```bash
+./compose.sh --podman pull && ./compose.sh --podman up -d
+```
+
+Warning: the stack exposes port 7888. If Docker already started the stack, Podman will fail to bind the same port (and vice versa). Stop the existing stack before switching runtimes. If Podman is used to start the stack, then all subsequent commands must also be run with Podman.
 
 ### Create a plugin
 
@@ -345,6 +353,7 @@ Note: `init.d` scripts are sourced at container startup.
 - Worker runners can either set `data["exec_command"]` and `data["command_progress_parser"]` for external tools
   (FFmpeg, etc.) or run a Python-only child process via `PluginChildProcess` (see
   `./projects/unmanic/unmanic/libs/unplugins/plugin_types/worker/process.py`).
+- For worker process plugins, perform all temporary work in the cache path. The current task cache path is the directory name of the `file_out` value provided in the `on_worker_process` data payload.
 - Shared task state is supported via `TaskDataStore` (documented in the worker runner docstring above). Use it
   when multiple plugin runners need to share data across stages.
 - Plugin settings are provided by `PluginSettings` (`./projects/unmanic/unmanic/libs/unplugins/settings.py`).
