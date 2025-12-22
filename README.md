@@ -38,7 +38,7 @@ To stop the stack:
 ./compose.sh down
 ```
 
-`./compose.sh` auto-detects NVIDIA or Intel/AMD (DRI) devices and adds the relevant override file from `./docker/`. If Docker is unavailable, you can use `./compose.sh --podman`.
+`./compose.sh` auto-detects NVIDIA or Intel/AMD (DRI) devices and adds the relevant override file from `./docker/`. If Docker is unavailable, you can use `./compose.sh --podman`. `./compose.sh exec` defaults to the `unmanic-dev` service, so you can run `./compose.sh exec ls -la` without naming the container.
 
 1. Create a plugin:
 
@@ -46,7 +46,7 @@ To stop the stack:
 PLUGIN_ID="test_plugin"
 PLUGIN_NAME="Plugin Name"
 
-docker compose exec unmanic-dev \
+./compose.sh exec \
   unmanic --manage-plugins \
   --create-plugin \
   --plugin-id="${PLUGIN_ID:?}" \
@@ -57,7 +57,7 @@ docker compose exec unmanic-dev \
 1. Edit the plugin in `./build/plugins/`, then test:
 
 ```bash
-docker compose exec unmanic-dev \
+./compose.sh exec \
   unmanic --manage-plugins --test-plugin=test_plugin
 ```
 

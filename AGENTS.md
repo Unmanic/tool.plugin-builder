@@ -63,7 +63,7 @@ Use `./compose.sh` to start/stop the stack. It detects GPU hardware and automati
 - Intel/AMD (DRI): uses `./docker/docker-compose.dri.yml` when `/dev/dri` exists.
 
 > Note:
-> Always execute commands inside the `unmanic-dev` container via `./compose.sh exec` (or `./compose.sh --podman exec`). This includes downloading files (`curl`/`wget`), running `ffmpeg`, and using other tools. The only exception is creating or patching files, which the agent can do outside the container without extra permissions.
+> Always execute commands inside the `unmanic-dev` container via `./compose.sh exec` (or `./compose.sh --podman exec`). This includes downloading files (`curl`/`wget`), running `ffmpeg`, and using other tools. The only exception is creating or patching files, which the agent can do outside the container without extra permissions. `./compose.sh exec` defaults to the `unmanic-dev` service, so `./compose.sh exec ls -la` runs inside that container.
 
 > Note:
 > Always use the `./compose.sh` wrapper for all `docker compose` or `podman compose` commands (including `exec`); if you see raw compose commands in examples, replace them with `./compose.sh` or `./compose.sh --podman`.
@@ -72,7 +72,7 @@ Use `./compose.sh` to start/stop the stack. It detects GPU hardware and automati
 > `./compose.sh` defaults `exec` to `--user=$(id -u)`. Use `./compose.sh --root exec ...` if you need root. Example:
 
 ```bash
-./compose.sh exec unmanic-dev unmanic --manage-plugins --reload-plugins
+./compose.sh exec unmanic --manage-plugins --reload-plugins
 ```
 
 ```bash
@@ -101,7 +101,7 @@ First start the container, then run a command like the example below. Always exe
 Running inside the container ensures the Ubuntu-based image has access to the required dependencies for Unmanic and plugins.
 
 ```bash
-./compose.sh exec unmanic-dev \
+./compose.sh exec \
   unmanic --manage-plugins \
   --create-plugin \
   --plugin-id=test_plugin \
@@ -204,7 +204,7 @@ When modifying an existing plugin, follow a short release checklist so the UI an
 ### Reload plugins
 
 ```bash
-./compose.sh exec unmanic-dev \
+./compose.sh exec \
   unmanic --manage-plugins --reload-plugins
 ```
 
@@ -213,7 +213,7 @@ After creating or editing a plugin, it will not appear in the Unmanic UI (http:/
 ### Test a plugin
 
 ```bash
-./compose.sh exec unmanic-dev \
+./compose.sh exec \
   unmanic --manage-plugins --test-plugin=test_plugin
 ```
 
@@ -221,7 +221,7 @@ You can override the test input/output filenames with `--test-file-in` and `--te
 just the filenames located under `./build/dev/library` (not full paths). Use them when you want a specific media file for validation.
 
 ```bash
-./compose.sh exec unmanic-dev \
+./compose.sh exec \
   unmanic --manage-plugins \
   --test-plugin=test_plugin \
   --test-file-in="source.mkv" \
@@ -245,7 +245,7 @@ Unmanic can install sample media for testing via `--install-test-data` (see `./p
 This creates the directories `./build/dev/cache` and `./build/dev/library` on the host (container paths `/config/.unmanic/dev/cache` and `/config/.unmanic/dev/library`) and downloads example files into them.
 
 ```bash
-./compose.sh exec unmanic-dev \
+./compose.sh exec \
   unmanic --manage-plugins --install-test-data
 ```
 
@@ -271,7 +271,7 @@ After CLI tests, you can query the running Unmanic API to verify plugin install/
 library configuration. Always run `curl` or `wget` inside the container to hit the service directly:
 
 ```bash
-./compose.sh exec unmanic-dev \
+./compose.sh exec \
   curl -sS http://localhost:7888/unmanic/swagger/swagger.json > /tmp/unmanic-swagger.json
 ```
 
@@ -285,37 +285,37 @@ Common API calls (examples):
 
 ```bash
 # List installed plugins (table-style request body).
-./compose.sh exec unmanic-dev \
+./compose.sh exec \
   curl -sS -X POST http://localhost:7888/unmanic/api/v2/plugins/installed \
   -H 'Content-Type: application/json' \
   -d '{"start":0,"length":200,"search_value":"","status":"all","order_by":"name","order_direction":"asc"}'
 
 # Read plugin info/settings (prefer local plugin by ID).
-./compose.sh exec unmanic-dev \
+./compose.sh exec \
   curl -sS -X POST http://localhost:7888/unmanic/api/v2/plugins/info \
   -H 'Content-Type: application/json' \
   -d '{"plugin_id":"test_plugin","prefer_local":true}'
 
 # Worker status.
-./compose.sh exec unmanic-dev \
+./compose.sh exec \
   curl -sS http://localhost:7888/unmanic/api/v2/workers/status
 
 # List libraries, read one, then write it back (edit JSON as needed).
-./compose.sh exec unmanic-dev \
+./compose.sh exec \
   curl -sS http://localhost:7888/unmanic/api/v2/settings/libraries
 
-./compose.sh exec unmanic-dev \
+./compose.sh exec \
   curl -sS -X POST http://localhost:7888/unmanic/api/v2/settings/library/read \
   -H 'Content-Type: application/json' \
   -d '{"id":1}'
 
-./compose.sh exec unmanic-dev \
+./compose.sh exec \
   curl -sS -X POST http://localhost:7888/unmanic/api/v2/settings/library/write \
   -H 'Content-Type: application/json' \
   -d '{"library_config":{"id":1,"name":"Default","path":"/config/.unmanic/dev/library","enable_scanner":true,"enable_inotify":false,"priority_score":0,"tags":[]},"plugins":{"enabled_plugins":[{"library_id":1,"plugin_id":"test_plugin"}]}}'
 
 # Enable debug logging. This will enable more verbose logging in `./build/logs/unmanic.log`
-./compose.sh exec unmanic-dev \
+./compose.sh exec \
   curl -sS -X POST http://localhost:7888/unmanic/api/v2/settings/write \
   -H 'Content-Type: application/json' \
   -d '{"settings":{"debugging":true}}'
@@ -336,7 +336,7 @@ To validate worker plugins against real files:
 Example scan trigger:
 
 ```bash
-./compose.sh exec unmanic-dev \
+./compose.sh exec \
   curl -sS -X POST http://localhost:7888/unmanic/api/v2/pending/library/update \
   -H 'Content-Type: application/json' \
   -d '{"id_list":[1],"library_name":"Default"}'

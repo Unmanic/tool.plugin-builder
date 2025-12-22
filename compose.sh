@@ -3,6 +3,7 @@ set -euo pipefail
 
 use_podman=false
 EXEC_USER="$(id -u)"
+DEFAULT_SERVICE="unmanic-dev"
 
 while [[ "${1:-}" =~ ^-- ]]; do
     case "$1" in
@@ -52,7 +53,7 @@ ps)
     exec "${compose_cmd[@]}" "${compose_files[@]}" ps "$@"
     ;;
 exec)
-    exec "${compose_cmd[@]}" "${compose_files[@]}" exec --user="${EXEC_USER:?}" "$@"
+    exec "${compose_cmd[@]}" "${compose_files[@]}" exec --user="${EXEC_USER:?}" "${DEFAULT_SERVICE}" "$@"
     ;;
 *)
     exec "${compose_cmd[@]}" "${compose_files[@]}" "$cmd" "$@"
