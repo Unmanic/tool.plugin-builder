@@ -153,6 +153,20 @@ Example `changelog.md`:
 
 The `description.md` file should not start with a header. just a HR (---).
 
+1. Create `./build/plugins/<plugin_id>/README.md` for the git repository using this template:
+
+```markdown
+# <Plugin Name>
+Plugin for [Unmanic](https://github.com/Unmanic)
+
+---
+
+### Information:
+
+- [Description](description.md)
+- [Changelog](changelog.md)
+```
+
 After scaffolding, update `./build/plugins/<plugin_id>/info.json` so the plugin is correctly identified
 in the UI and metadata is accurate. Agents (Gemini, Codex, Claude, etc) should not leave the placeholder
 `Plugin Name` in place. Fields to review and update:
@@ -346,6 +360,7 @@ Example scan trigger:
 
 When asked to build a plugin, use the CLI to scaffold it, then fill in metadata and logic.
 Reference the local `./projects` repositories for code patterns and API usage.
+When adding a new runner, always include the runner docstring from the corresponding `runner_docstring` in `./projects/unmanic/unmanic/libs/unplugins/plugin_types/`.
 
 ## FFmpeg helper submodule (default)
 
@@ -362,18 +377,21 @@ git submodule add https://github.com/Josh5/unmanic.plugin.helpers.ffmpeg.git ./l
 
 ## Dependencies inside the container
 
-If a plugin needs dependencies (apt or pip), create an installer script under its `init.d/` directory.
-Example: `./projects/unmanic-plugins/source/auto_rotate_images/init.d/install-jhead-jpegtran.sh`.
-If using apt, guard `apt-get update` to only run once:
+If a plugin needs dependencies (apt or pip):
+
+1. **Python Dependencies:** Add them to a `requirements.txt` file in the plugin's root directory (e.g., `./build/plugins/<plugin_id>/requirements.txt`). Unmanic will automatically install these via `pip` when the plugin is loaded or reloaded.
+2. **System Dependencies:** Create an installer script under the plugin's `init.d/` directory.
+   Example: `./projects/unmanic-plugins/source/auto_rotate_images/init.d/install-jhead-jpegtran.sh`.
+   If using apt, guard `apt-get update` to only run once:
 
 ```bash
 [[ "${__apt_updated:-false}" == 'false' ]] && apt-get update && __apt_updated=true
 ```
 
-Example pip install script (create something like `init.d/install-python-deps.sh`):
+Example pip install script (for advanced cases. Installing python dependencies though `requirements.txt` and the plugin manager when the plugin is reloaded is preferred):
 
 ```bash
-python3 -m pip install --cache-dir /config/.cache/pip -r requirements.txt
+python3 -m pip install --cache-dir /config/.cache/pip PyYAML
 ```
 
 Note: `init.d` scripts are sourced at container startup.
