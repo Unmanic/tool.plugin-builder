@@ -61,9 +61,15 @@ Use `./compose.sh` to start/stop the stack. It detects GPU hardware and automati
 
 - NVIDIA: uses `./docker/docker-compose.nvidia.yml` when `nvidia-smi` or `/dev/nvidiactl` is present.
 - Intel/AMD (DRI): uses `./docker/docker-compose.dri.yml` when `/dev/dri` exists.
-Note: Always execute commands inside the `unmanic-dev` container via `./compose.sh exec` (or `./compose.sh --podman exec`). This includes downloading files (`curl`/`wget`), running `ffmpeg`, and using other tools. The only exception is creating or patching files, which the agent can do outside the container without extra permissions.
-Note: Always use the `./compose.sh` wrapper for all `docker compose` or `podman compose` commands (including `exec`); if you see raw compose commands in examples, replace them with `./compose.sh` or `./compose.sh --podman`.
-Note: `./compose.sh` defaults `exec` to `--user=$(id -u)`. Use `./compose.sh --root exec ...` if you need root. Example:
+
+> Note:
+> Always execute commands inside the `unmanic-dev` container via `./compose.sh exec` (or `./compose.sh --podman exec`). This includes downloading files (`curl`/`wget`), running `ffmpeg`, and using other tools. The only exception is creating or patching files, which the agent can do outside the container without extra permissions.
+
+> Note:
+> Always use the `./compose.sh` wrapper for all `docker compose` or `podman compose` commands (including `exec`); if you see raw compose commands in examples, replace them with `./compose.sh` or `./compose.sh --podman`.
+
+> Note:
+> `./compose.sh` defaults `exec` to `--user=$(id -u)`. Use `./compose.sh --root exec ...` if you need root. Example:
 
 ```bash
 ./compose.sh exec unmanic-dev unmanic --manage-plugins --reload-plugins
@@ -224,6 +230,15 @@ just the filenames located under `./build/dev/library` (not full paths). Use the
 
 Files must exists in that `./build/dev/library` which is mounted into the unmanic-dev container as `/config/.unmanic/dev/library`.
 
+### Plugin test settings (CLI + API)
+
+When asked to test a plugin against a file under specific conditions, use the Swagger docs and API to determine the current plugin settings, then configure the plugin settings through the API. The Unmanic CLI `--test-plugin` command always tests against the settings applied to library 1. If global settings are set but library 1 has a per-library override, CLI tests will use the override and may fail. It is best to test plugins when there are no libraries configured with the plugin and only global settings are configured. You can also edit settings directly in `./build/userdata/<plugin_id>`:
+
+- `settings.json` is the current global settings.
+- `settings.1.json` is the settings for the library with ID "1".
+
+Editing these JSON files directly is valid and will be picked up by CLI tests.
+
 ### Install sample test data
 
 Unmanic can install sample media for testing via `--install-test-data` (see `./projects/unmanic/unmanic/libs/unplugins/pluginscli.py`).
@@ -260,9 +275,11 @@ library configuration. Always run `curl` or `wget` inside the container to hit t
   curl -sS http://localhost:7888/unmanic/swagger/swagger.json > /tmp/unmanic-swagger.json
 ```
 
-Use the Swagger JSON to discover all endpoints. Note: the `servers` list inside the Swagger file may
-still reference port 8888, but this dev container runs on 7888. Always send requests to
-`http://localhost:7888/unmanic/api/v2/`.
+Use the Swagger JSON to discover all endpoints.
+
+> Note:
+> The `servers` list inside the Swagger file may still reference port 8888, but this dev container runs on 7888. Always send requests to
+> `http://localhost:7888/unmanic/api/v2/`.
 
 Common API calls (examples):
 
@@ -339,10 +356,9 @@ https://github.com/Josh5/unmanic.plugin.helpers.ffmpeg. Add it to each plugin th
 git submodule add https://github.com/Josh5/unmanic.plugin.helpers.ffmpeg.git ./lib/ffmpeg
 ```
 
-Note: `./projects/unmanic-plugins/source/` is a published source mirror and does not include submodules.
-For example, `./projects/unmanic-plugins/source/video_transcoder/` exists here, but the original
-repo at https://github.com/Unmanic/plugin.video_transcoder includes the FFmpeg helper submodule
-under `./lib/ffmpeg`.
+> Note:
+> `./projects/unmanic-plugins/source/` is a published source mirror and does not include submodules.
+> For example, `./projects/unmanic-plugins/source/video_transcoder/` exists here, but the original repo at https://github.com/Unmanic/plugin.video_transcoder includes the FFmpeg helper submodule under `./lib/ffmpeg`.
 
 ## Dependencies inside the container
 
