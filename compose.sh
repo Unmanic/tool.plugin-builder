@@ -2,10 +2,23 @@
 set -euo pipefail
 
 use_podman=false
-if [[ "${1:-}" == "--podman" ]]; then
-    use_podman=true
-    shift
-fi
+EXEC_USER="$(id -u)"
+
+while [[ "${1:-}" =~ ^-- ]]; do
+    case "$1" in
+    --podman)
+        use_podman=true
+        shift
+        ;;
+    --root)
+        EXEC_USER=0
+        shift
+        ;;
+    *)
+        break
+        ;;
+    esac
+done
 
 compose_cmd=(docker compose)
 if $use_podman; then
@@ -24,4 +37,24 @@ if [[ -e /dev/dri ]]; then
     compose_files+=(-f docker/docker-compose.dri.yml)
 fi
 
-exec "${compose_cmd[@]}" "${compose_files[@]}" "$@"
+cmd="${1:-}"
+shift || true
+
+case "$cmd" in
+start)
+    "${compose_cmd[@]}" "${compose_files[@]}" pull
+    exec "${compose_cmd[@]}" "${compose_files[@]}" up -d "$@"
+    ;;
+stop)
+    exec "${compose_cmd[@]}" "${compose_files[@]}" down "$@"
+    ;;
+ps)
+    exec "${compose_cmd[@]}" "${compose_files[@]}" ps "$@"
+    ;;
+exec)
+    exec "${compose_cmd[@]}" "${compose_files[@]}" exec --user="${EXEC_USER:?}" "$@"
+    ;;
+*)
+    exec "${compose_cmd[@]}" "${compose_files[@]}" "$cmd" "$@"
+    ;;
+esac

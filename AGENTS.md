@@ -61,9 +61,16 @@ Use `./compose.sh` to start/stop the stack. It detects GPU hardware and automati
 
 - NVIDIA: uses `./docker/docker-compose.nvidia.yml` when `nvidia-smi` or `/dev/nvidiactl` is present.
 - Intel/AMD (DRI): uses `./docker/docker-compose.dri.yml` when `/dev/dri` exists.
+Note: Always execute commands inside the `unmanic-dev` container via `./compose.sh exec` (or `./compose.sh --podman exec`). This includes downloading files (`curl`/`wget`), running `ffmpeg`, and using other tools. The only exception is creating or patching files, which the agent can do outside the container without extra permissions.
+Note: Always use the `./compose.sh` wrapper for all `docker compose` or `podman compose` commands (including `exec`); if you see raw compose commands in examples, replace them with `./compose.sh` or `./compose.sh --podman`.
+Note: `./compose.sh` defaults `exec` to `--user=$(id -u)`. Use `./compose.sh --root exec ...` if you need root. Example:
 
 ```bash
-./compose.sh pull && ./compose.sh up -d
+./compose.sh exec unmanic-dev unmanic --manage-plugins --reload-plugins
+```
+
+```bash
+./compose.sh start
 ```
 
 The Unmanic UI will be available on port 7888 (http://localhost:7888).
@@ -71,24 +78,24 @@ The Unmanic UI will be available on port 7888 (http://localhost:7888).
 To stop the stack:
 
 ```bash
-./compose.sh down
+./compose.sh stop
 ```
 
 Podman fallback:
 
 ```bash
-./compose.sh --podman pull && ./compose.sh --podman up -d
+./compose.sh --podman start
 ```
 
 Warning: the stack exposes port 7888. If Docker already started the stack, Podman will fail to bind the same port (and vice versa). Stop the existing stack before switching runtimes. If Podman is used to start the stack, then all subsequent commands must also be run with Podman.
 
 ### Create a plugin
 
-First start the container, then run a command like the example below. Always execute Unmanic commands via `docker compose exec --user=$(id -u)` (or `podman compose exec --user=$(id -u)` if that is what you use).
+First start the container, then run a command like the example below. Always execute Unmanic commands via `./compose.sh exec` (or `./compose.sh --podman exec` if that is what you use).
 Running inside the container ensures the Ubuntu-based image has access to the required dependencies for Unmanic and plugins.
 
 ```bash
-docker compose exec --user=$(id -u) unmanic-dev \
+./compose.sh exec unmanic-dev \
   unmanic --manage-plugins \
   --create-plugin \
   --plugin-id=test_plugin \
@@ -191,7 +198,7 @@ When modifying an existing plugin, follow a short release checklist so the UI an
 ### Reload plugins
 
 ```bash
-docker compose exec --user=$(id -u) unmanic-dev \
+./compose.sh exec unmanic-dev \
   unmanic --manage-plugins --reload-plugins
 ```
 
@@ -200,7 +207,7 @@ After creating or editing a plugin, it will not appear in the Unmanic UI (http:/
 ### Test a plugin
 
 ```bash
-docker compose exec --user=$(id -u) unmanic-dev \
+./compose.sh exec unmanic-dev \
   unmanic --manage-plugins --test-plugin=test_plugin
 ```
 
@@ -208,7 +215,7 @@ You can override the test input/output filenames with `--test-file-in` and `--te
 just the filenames located under `./build/dev/library` (not full paths). Use them when you want a specific media file for validation.
 
 ```bash
-docker compose exec --user=$(id -u) unmanic-dev \
+./compose.sh exec unmanic-dev \
   unmanic --manage-plugins \
   --test-plugin=test_plugin \
   --test-file-in="source.mkv" \
@@ -223,7 +230,7 @@ Unmanic can install sample media for testing via `--install-test-data` (see `./p
 This creates the directories `./build/dev/cache` and `./build/dev/library` on the host (container paths `/config/.unmanic/dev/cache` and `/config/.unmanic/dev/library`) and downloads example files into them.
 
 ```bash
-docker compose exec --user=$(id -u) unmanic-dev \
+./compose.sh exec unmanic-dev \
   unmanic --manage-plugins --install-test-data
 ```
 
@@ -249,7 +256,7 @@ After CLI tests, you can query the running Unmanic API to verify plugin install/
 library configuration. Always run `curl` or `wget` inside the container to hit the service directly:
 
 ```bash
-docker compose exec --user=$(id -u) unmanic-dev \
+./compose.sh exec unmanic-dev \
   curl -sS http://localhost:7888/unmanic/swagger/swagger.json > /tmp/unmanic-swagger.json
 ```
 
@@ -261,37 +268,37 @@ Common API calls (examples):
 
 ```bash
 # List installed plugins (table-style request body).
-docker compose exec --user=$(id -u) unmanic-dev \
+./compose.sh exec unmanic-dev \
   curl -sS -X POST http://localhost:7888/unmanic/api/v2/plugins/installed \
   -H 'Content-Type: application/json' \
   -d '{"start":0,"length":200,"search_value":"","status":"all","order_by":"name","order_direction":"asc"}'
 
 # Read plugin info/settings (prefer local plugin by ID).
-docker compose exec --user=$(id -u) unmanic-dev \
+./compose.sh exec unmanic-dev \
   curl -sS -X POST http://localhost:7888/unmanic/api/v2/plugins/info \
   -H 'Content-Type: application/json' \
   -d '{"plugin_id":"test_plugin","prefer_local":true}'
 
 # Worker status.
-docker compose exec --user=$(id -u) unmanic-dev \
+./compose.sh exec unmanic-dev \
   curl -sS http://localhost:7888/unmanic/api/v2/workers/status
 
 # List libraries, read one, then write it back (edit JSON as needed).
-docker compose exec --user=$(id -u) unmanic-dev \
+./compose.sh exec unmanic-dev \
   curl -sS http://localhost:7888/unmanic/api/v2/settings/libraries
 
-docker compose exec --user=$(id -u) unmanic-dev \
+./compose.sh exec unmanic-dev \
   curl -sS -X POST http://localhost:7888/unmanic/api/v2/settings/library/read \
   -H 'Content-Type: application/json' \
   -d '{"id":1}'
 
-docker compose exec --user=$(id -u) unmanic-dev \
+./compose.sh exec unmanic-dev \
   curl -sS -X POST http://localhost:7888/unmanic/api/v2/settings/library/write \
   -H 'Content-Type: application/json' \
   -d '{"library_config":{"id":1,"name":"Default","path":"/config/.unmanic/dev/library","enable_scanner":true,"enable_inotify":false,"priority_score":0,"tags":[]},"plugins":{"enabled_plugins":[{"library_id":1,"plugin_id":"test_plugin"}]}}'
 
 # Enable debug logging. This will enable more verbose logging in `./build/logs/unmanic.log`
-docker compose exec --user=$(id -u) unmanic-dev \
+./compose.sh exec unmanic-dev \
   curl -sS -X POST http://localhost:7888/unmanic/api/v2/settings/write \
   -H 'Content-Type: application/json' \
   -d '{"settings":{"debugging":true}}'
@@ -312,7 +319,7 @@ To validate worker plugins against real files:
 Example scan trigger:
 
 ```bash
-docker compose exec --user=$(id -u) unmanic-dev \
+./compose.sh exec unmanic-dev \
   curl -sS -X POST http://localhost:7888/unmanic/api/v2/pending/library/update \
   -H 'Content-Type: application/json' \
   -d '{"id_list":[1],"library_name":"Default"}'
