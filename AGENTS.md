@@ -211,33 +211,43 @@ Icon tip: if you need an icon, agents can search for a suitable `icon.png` (for 
 When a user wants to work on an existing plugin/project, **always ask** whether to clone with SSH or HTTPS (do not assume). If the user says "I don't know" or "either is fine," default to HTTPS. Then proceed to clone:
 
 1. Ask whether to clone with SSH or HTTPS (required prompt). If the user says "I don't know" or "either is fine," default to HTTPS.
-2. Derive the destination folder name from the repo (e.g., `https://github.com/Unmanic/plugin.rename_video_file_after_transcode` -> `plugin.rename_video_file_after_transcode`).
-3. Clone into `./build/plugins/<repo_name>` (container path `/config/.unmanic/plugins/<repo_name>`).
-4. After cloning, run the Unmanic CLI create process so Unmanic imports `info.json` into the database (it should detect the repo already exists).
+2. Clone the repository into a temporary directory under plugins (e.g. `./build/plugins/<repo_name>`).
+3. Locate `info.json` in the cloned files.
+   - If `info.json` is in the root of the clone: ensure the directory name matches the `id` from `info.json`. If not, rename it.
+   - If `info.json` is nested (e.g. `source/<plugin_id>/info.json`): move that specific subdirectory to `./build/plugins/<plugin_id>` and delete the rest of the cloned repository.
+4. Run the Unmanic CLI create process so Unmanic imports `info.json` into the database.
 5. Reload plugins so any dependencies are installed and the plugin is registered.
 6. Remind the user that cloning only fetches the repo; the plugin will not appear in the UI until you reload plugins.
 
 Always use `./compose.sh exec` for `git clone` (downloading happens in the container):
 
 ```bash
-# HTTPS
+# Example: Cloning a repo
+# 1. Clone to a temp location
 ./compose.sh exec \
   git clone https://github.com/Unmanic/plugin.rename_video_file_after_transcode \
-  /config/.unmanic/plugins/plugin.rename_video_file_after_transcode
+  /config/.unmanic/plugins/plugin.rename_video_file_after_transcode-repo
 
-# SSH
+# 2. Check for info.json
 ./compose.sh exec \
-  git clone git@github.com:Unmanic/plugin.rename_video_file_after_transcode.git \
-  /config/.unmanic/plugins/plugin.rename_video_file_after_transcode
+  find /config/.unmanic/plugins/plugin.rename_video_file_after_transcode-repo -name info.json
 
-# Register the cloned plugin (imports info.json into the DB)
+# 3. Read info.json to find the ID (e.g., "rename_video_file_after_transcode") and confirm location (e.g., info.json in the root)
+./compose.sh exec \
+  cat /config/.unmanic/plugins/plugin.rename_video_file_after_transcode-repo/info.json
+
+# 4. Move/Rename the plugin to the correct path (./build/plugins/<plugin_id>)
+mv ./build/plugins/plugin.rename_video_file_after_transcode-repo ./build/plugins/rename_video_file_after_transcode
+
+# 5. Clean up the clone if necessary (not needed here since we renamed the whole dir)
+
+# 6. Register the plugin (imports info.json into the DB)
 ./compose.sh exec \
   unmanic --manage-plugins \
   --create-plugin \
-  --plugin-id=plugin.rename_video_file_after_transcode \
-  --plugin-name="Rename Video File After Transcode"
+  --plugin-id=rename_video_file_after_transcode
 
-# Reload plugins (installs requirements, registers plugin)
+# 7. Reload plugins (installs requirements, registers plugin)
 ./compose.sh exec \
   unmanic --manage-plugins --reload-plugins
 ```
