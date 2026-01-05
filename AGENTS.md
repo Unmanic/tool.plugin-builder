@@ -157,6 +157,7 @@ The `description.md` file should not start with a header. just a HR (---).
 
 ```markdown
 # <Plugin Name>
+
 Plugin for [Unmanic](https://github.com/Unmanic)
 
 ---
@@ -205,6 +206,42 @@ Example `info.json`:
 Icon tip: if you need an icon, agents can search for a suitable `icon.png` (for example `"githubusercontent <service name> icon png"`), download it with `curl` into the plugin root, and set `icon` in `info.json` to the raw GitHub URL, e.g.
 `https://raw.githubusercontent.com/<GITHUB_ORG>/<REPO>/master/icon.png`.
 
+### Clone an existing plugin/project
+
+When a user wants to work on an existing plugin/project, **always ask** whether to clone with SSH or HTTPS (do not assume). If the user says "I don't know" or "either is fine," default to HTTPS. Then proceed to clone:
+
+1. Ask whether to clone with SSH or HTTPS (required prompt). If the user says "I don't know" or "either is fine," default to HTTPS.
+2. Derive the destination folder name from the repo (e.g., `https://github.com/Unmanic/plugin.rename_video_file_after_transcode` -> `plugin.rename_video_file_after_transcode`).
+3. Clone into `./build/plugins/<repo_name>` (container path `/config/.unmanic/plugins/<repo_name>`).
+4. After cloning, run the Unmanic CLI create process so Unmanic imports `info.json` into the database (it should detect the repo already exists).
+5. Reload plugins so any dependencies are installed and the plugin is registered.
+6. Remind the user that cloning only fetches the repo; the plugin will not appear in the UI until you reload plugins.
+
+Always use `./compose.sh exec` for `git clone` (downloading happens in the container):
+
+```bash
+# HTTPS
+./compose.sh exec \
+  git clone https://github.com/Unmanic/plugin.rename_video_file_after_transcode \
+  /config/.unmanic/plugins/plugin.rename_video_file_after_transcode
+
+# SSH
+./compose.sh exec \
+  git clone git@github.com:Unmanic/plugin.rename_video_file_after_transcode.git \
+  /config/.unmanic/plugins/plugin.rename_video_file_after_transcode
+
+# Register the cloned plugin (imports info.json into the DB)
+./compose.sh exec \
+  unmanic --manage-plugins \
+  --create-plugin \
+  --plugin-id=plugin.rename_video_file_after_transcode \
+  --plugin-name="Rename Video File After Transcode"
+
+# Reload plugins (installs requirements, registers plugin)
+./compose.sh exec \
+  unmanic --manage-plugins --reload-plugins
+```
+
 ### Update an existing plugin
 
 When modifying an existing plugin, follow a short release checklist so the UI and metadata stay accurate:
@@ -214,6 +251,40 @@ When modifying an existing plugin, follow a short release checklist so the UI an
    as a formatting reference.
 1. Bump the `version` field in `./build/plugins/<plugin_id>/info.json` to match the changelog entry.
 1. Reload plugins with `--reload-plugins` so the UI picks up the changes, then test with `--test-plugin`.
+
+### Remove a plugin
+
+To remove a plugin cleanly, uninstall it first via the API (so Unmanic stops tracking it), then delete the files:
+
+1. List installed plugins to find the database `id` (integer) for the plugin you want to remove (this is different from the `plugin_id` string).
+2. Call the Unmanic API to remove the plugin by its database `id`.
+3. Delete the plugin directory (including its `.git` directory) under `./build/plugins/<plugin_id>`.
+4. Reload plugins.
+
+Example:
+
+```bash
+# 1. List installed plugins to find the 'id' (e.g., 5)
+./compose.sh exec \
+  curl -sS -X POST http://localhost:7888/unmanic/api/v2/plugins/installed \
+  -H 'Content-Type: application/json' \
+  -d '{"start":0,"length":200,"search_value":"","status":"all","order_by":"name","order_direction":"asc"}'
+
+# 2. Remove the plugin using the found ID (e.g., 5)
+./compose.sh exec \
+  curl -sS -X DELETE http://localhost:7888/unmanic/api/v2/plugins/remove \
+  -H 'Content-Type: application/json' \
+  -d '{"id_list":[5]}'
+
+# 3. Remove the plugin files
+rm -rf ./build/plugins/plugin_id
+
+# 4. Reload plugins
+./compose.sh exec \
+  unmanic --manage-plugins --reload-plugins
+```
+
+Note: deleting the directory before uninstalling via the API can cause reload errors because Unmanic still expects `info.json` to exist.
 
 ### Reload plugins
 
