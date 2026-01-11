@@ -305,6 +305,12 @@ Note: deleting the directory before uninstalling via the API can cause reload er
 
 After creating or editing a plugin, it will not appear in the Unmanic UI (http://localhost:7888) until you reload plugins with the command above.
 
+> Tip:
+> Sometimes Python has issues unloading modules or replacing classes during a plugin reload. If your changes are not appearing as expected after a reload, restart the `unmanic-dev` container to ensure a clean state:
+> ```bash
+> ./compose.sh stop && ./compose.sh start
+> ```
+
 ### Test a plugin
 
 ```bash

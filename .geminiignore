@@ -1,3 +1,4 @@
 # Allow build directory
 !build/
 !projects/
+!temp/

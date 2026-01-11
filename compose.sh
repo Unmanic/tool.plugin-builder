@@ -2,6 +2,7 @@
 set -euo pipefail
 
 use_podman=false
+pull_image=false
 EXEC_USER="$(id -u)"
 DEFAULT_SERVICE="unmanic-dev"
 
@@ -9,6 +10,10 @@ while [[ "${1:-}" =~ ^-- ]]; do
     case "$1" in
     --podman)
         use_podman=true
+        shift
+        ;;
+    --pull)
+        pull_image=true
         shift
         ;;
     --root)
@@ -43,7 +48,9 @@ shift || true
 
 case "$cmd" in
 start)
-    "${compose_cmd[@]}" "${compose_files[@]}" pull
+    if $pull_image; then
+        "${compose_cmd[@]}" "${compose_files[@]}" pull
+    fi
     exec "${compose_cmd[@]}" "${compose_files[@]}" up -d "$@"
     ;;
 stop)
