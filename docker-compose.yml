@@ -2,6 +2,8 @@ services:
   unmanic-dev:
     container_name: unmanic-plugin-dev
     image: ghcr.io/unmanic/unmanic:staging
+    cpus: '${HOST_CPU_LIMIT:-0}'
+    cpu_shares: 820
     userns_mode: keep-id
     command: ['/usr/bin/unmanic', '--port', '7888']
     environment:
@@ -12,3 +14,5 @@ services:
       - '7888:7888'
     volumes:
       - ./build:/config/.unmanic:z
+      - ./build/dev/library:/library:z
+      - ./build/dev/cache:/tmp/unmanic:z

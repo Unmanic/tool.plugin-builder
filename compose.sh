@@ -33,6 +33,11 @@ fi
 
 compose_files=(-f docker-compose.yml)
 
+if [[ -z "${HOST_CPU_LIMIT:-}" ]]; then
+    HOST_CPU_LIMIT="$(echo "$(nproc) * 0.8" | bc 2>/dev/null || echo "0")"
+fi
+export HOST_CPU_LIMIT
+
 # Add support for NVIDIA GPUs
 if command -v nvidia-smi >/dev/null 2>&1 || [[ -e /dev/nvidiactl ]]; then
     compose_files+=(-f docker/docker-compose.nvidia.yml)
