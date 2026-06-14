@@ -284,37 +284,49 @@ When modifying an existing plugin, follow a short release checklist so the UI an
 
 ### Remove a plugin
 
-To remove a plugin cleanly, uninstall it first via the API (so Unmanic stops tracking it), then delete the files:
+For cloned plugin repos under `./build/plugins`, the normal uninstall path can be blocked when the plugin directory still contains a `.git` directory. In that case, remove the plugin directory from disk first, then clean up the stale DB entry, then reload plugins.
 
-1. List installed plugins to find the database `id` (integer) for the plugin you want to remove (this is different from the `plugin_id` string).
-2. Call the Unmanic API to remove the plugin by its database `id`.
-3. Delete the plugin directory (including its `.git` directory) under `./build/plugins/<plugin_id>`.
+1. Remove or move the plugin directory under `./build/plugins/<plugin_id>`.
+2. List installed plugins to find the stale database `id` (integer) for that plugin. This is different from the `plugin_id` string.
+3. Call the Unmanic API to remove the stale plugin row by its database `id`.
 4. Reload plugins.
+5. Verify the installed list matches the remaining directories in `./build/plugins`.
+6. If the UI still looks stale, restart the container and hard-refresh the browser page.
 
 Example:
 
 ```bash
-# 1. List installed plugins to find the 'id' (e.g., 5)
+# 1. Remove the cloned plugin repo from disk first
+rm -rf ./build/plugins/rename_video_file_after_transcode
+
+# 2. List installed plugins to find the stale DB id (e.g., 29)
 ./compose.sh exec \
   curl -sS -X POST http://localhost:7888/unmanic/api/v2/plugins/installed \
   -H 'Content-Type: application/json' \
   -d '{"start":0,"length":200,"search_value":"","status":"all","order_by":"name","order_direction":"asc"}'
 
-# 2. Remove the plugin using the found ID (e.g., 5)
+# 3. Remove the stale plugin DB row using the found ID (e.g., 29)
 ./compose.sh exec \
   curl -sS -X DELETE http://localhost:7888/unmanic/api/v2/plugins/remove \
   -H 'Content-Type: application/json' \
-  -d '{"id_list":[5]}'
-
-# 3. Remove the plugin files
-rm -rf ./build/plugins/plugin_id
+  -d '{"id_list":[29]}'
 
 # 4. Reload plugins
 ./compose.sh exec \
   unmanic --manage-plugins --reload-plugins
+
+# 5. Verify the remaining installed plugins
+./compose.sh exec \
+  curl -sS -X POST http://localhost:7888/unmanic/api/v2/plugins/installed \
+  -H 'Content-Type: application/json' \
+  -d '{"start":0,"length":200,"search_value":"","status":"all","order_by":"name","order_direction":"asc"}'
 ```
 
-Note: deleting the directory before uninstalling via the API can cause reload errors because Unmanic still expects `info.json` to exist.
+Important:
+
+- For cloned git repos in `./build/plugins`, removing the directory first is often necessary because the `.git` directory can block the normal uninstall flow.
+- `--reload-plugins` will not remove stale DB rows by itself. If a plugin directory was deleted manually, you must also remove the stale row via the API.
+- If you are removing many plugins at once, it is fine to delete all of the directories first, then remove all stale DB `id`s in one API call using `{"id_list":[...]}`.
 
 ### Reload plugins
 
