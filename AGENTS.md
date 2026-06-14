@@ -216,8 +216,19 @@ When a user wants to work on an existing plugin/project, **always ask** whether 
    - If `info.json` is in the root of the clone: ensure the directory name matches the `id` from `info.json`. If not, rename it.
    - If `info.json` is nested (e.g. `source/<plugin_id>/info.json`): move that specific subdirectory to `./build/plugins/<plugin_id>` and delete the rest of the cloned repository.
 4. Run the Unmanic CLI create process so Unmanic imports `info.json` into the database.
-5. Reload plugins so any dependencies are installed and the plugin is registered.
-6. Remind the user that cloning only fetches the repo; the plugin will not appear in the UI until you reload plugins.
+5. If the plugin repo contains submodules (for example `lib/ffmpeg`), initialise them before reloading plugins.
+6. Reload plugins so dependencies are installed and the imported plugin can be loaded by Unmanic.
+7. Verify there are no plugin import errors in `./build/logs/unmanic.log`.
+8. If the plugin still does not appear in the UI, restart the container and hard-refresh the browser page.
+9. Remind the user that cloning only fetches the repo; the plugin will not appear in the UI until you complete the import and reload steps.
+
+Important:
+
+- `./compose.sh exec unmanic --manage-plugins --create-plugin --plugin-id=<plugin_id> ...` is required to import an existing plugin directory into the Unmanic database so it appears in the UI.
+- If the plugin directory already exists, `--create-plugin` will not overwrite or re-scaffold the existing plugin files. It will use the command arguments to register/import the plugin into the DB.
+- `--reload-plugins` does not perform this import step for new plugin directories. It only reloads plugins that are already known to Unmanic and installs their dependencies.
+- If the repo has submodules, `git submodule update --init --recursive` is also required before `--reload-plugins` or the plugin may be registered in the DB but fail to import at runtime.
+- For an existing plugin directory, always run `--create-plugin` first, then initialise submodules if needed, then `--reload-plugins`.
 
 Always use `./compose.sh exec` for `git clone` (downloading happens in the container):
 
@@ -245,11 +256,20 @@ mv ./build/plugins/plugin.rename_video_file_after_transcode-repo ./build/plugins
 ./compose.sh exec \
   unmanic --manage-plugins \
   --create-plugin \
-  --plugin-id=rename_video_file_after_transcode
+  --plugin-id=rename_video_file_after_transcode \
+  --plugin-name="Rename Video File After Transcode" \
+  --plugin-runners="on_postprocessor_task_results"
 
-# 7. Reload plugins (installs requirements, registers plugin)
+# 7. If the plugin has submodules (for example lib/ffmpeg), initialise them
+./compose.sh exec \
+  git -C /config/.unmanic/plugins/rename_video_file_after_transcode submodule update --init --recursive
+
+# 8. Reload plugins (installs requirements and loads the imported plugin)
 ./compose.sh exec \
   unmanic --manage-plugins --reload-plugins
+
+# 9. Confirm there are no import failures
+tail -n 100 ./build/logs/unmanic.log
 ```
 
 ### Update an existing plugin
@@ -305,8 +325,18 @@ Note: deleting the directory before uninstalling via the API can cause reload er
 
 After creating or editing a plugin, it will not appear in the Unmanic UI (http://localhost:7888) until you reload plugins with the command above.
 
+Important:
+
+- `--reload-plugins` is not a substitute for `--create-plugin` when a plugin directory exists on disk but has never been imported into the database.
+- Use `--create-plugin` to register/import the plugin first.
+- If the plugin repo contains submodules, initialise them before reloading.
+- Then use `--reload-plugins` to load it into the running Unmanic process and install any dependencies.
+- A plugin can exist in the DB and still not appear correctly in the UI if it fails to import during reload. Always check `./build/logs/unmanic.log` for `Exception encountered while importing module ...`.
+- If import issues were fixed but the UI still appears stale, restart the container and hard-refresh the browser page.
+
 > Tip:
 > Sometimes Python has issues unloading modules or replacing classes during a plugin reload. If your changes are not appearing as expected after a reload, restart the `unmanic-dev` container to ensure a clean state:
+>
 > ```bash
 > ./compose.sh stop && ./compose.sh start
 > ```
