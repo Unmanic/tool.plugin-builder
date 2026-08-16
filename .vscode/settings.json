@@ -1,3 +1,4 @@
 {
-    "git.repositoryScanMaxDepth": 2
+    "git.repositoryScanMaxDepth": 5,
+    "git.detectSubmodules": false
 }
